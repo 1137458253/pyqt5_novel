@@ -1,4 +1,5 @@
 import math
+import os
 import threading
 import time
 from concurrent.futures.thread import ThreadPoolExecutor
@@ -7,68 +8,196 @@ from random import random
 import requests
 from PyQt5 import uic
 from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QApplication, QMessageBox, QTableWidgetItem
+from PyQt5.QtWidgets import QApplication, QMessageBox, QTableWidgetItem, QPlainTextEdit, QMainWindow, QPushButton
 from PyQt5 import QtWidgets, QtCore
 import sys
 from PyQt5.QtCore import *
 import time
 from fake_useragent import UserAgent
 from lxml import etree
-class Runthread(QtCore.QThread):
-    #  通过类成员对象定义信号对象
-    _signal = pyqtSignal(str)
 
-    def __init__(self):
-        super(Runthread, self).__init__()
 
-    def __del__(self):
-        self.wait()
+
+
+
+class MyThread(QThread):
+    def __init__(self, func, kwargs):
+        try:
+            super().__init__()
+            self.func = func
+            self.kwargs = kwargs
+        except Exception as e:
+            print(e)
+
 
     def run(self):
-        for i in range(100):
-            time.sleep(0.2)
-            self._signal.emit(str(i))  # 注意这里与_signal = pyqtSignal(str)中的类型相同
-class Example(QtWidgets.QWidget):
+        try:
+            self.func(**self.kwargs)
+        except Exception as e:
+            print(e)
+# print(*self.args, **self.kwargs)
 
-    def __init__(self):
-        super().__init__()
-        # 按钮初始化
-        self.button = QtWidgets.QPushButton('开始', self)
-        self.button.setToolTip('这是一个 <b>QPushButton</b> widget')
-        self.button.resize(self.button.sizeHint())
-        self.button.move(120, 80)
-        self.button.clicked.connect(self.start_login)  # 绑定多线程触发事件
+# class C(QThread):
+#     sinout=pyqtSignal(int,int)
+#     def __init__(self,data):
+#         super(C, self).__init__()
+#         self.data=data
+#     def run(self):
+#         self.sinout.emit(1,2)
+#下载所有章节
+def getcontent(self,url, num, head):
+    try:
+        print(url,num,head)
+        dirpath=   str(self.novel_name) + "/"
+        textpath = dirpath+str(head)+".txt"
+        isdirExists = os.path.exists(dirpath)
+        istxtExists = os.path.exists(textpath)
+        if not isdirExists:
+            os.makedirs(dirpath)
+            print(str(self.novel_name)+"文件夹创建成功")
+        if istxtExists:
+            print(str(head)+".txt"+"文件已存在")
+            return
+        else:
+            h = {
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                "Accept-Encoding": "gzip, deflate",
+                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+                "Cache-Control": "max-age=0",
+                "Connection": "keep-alive",
+                # "Cookie": "articlevisited=1",
+                "DNT": "1",
+                "Host": "www.vbiquge.co",
+                # "If-Modified-Since": "Thu, 07 Mar 2019 20:54:17 GMT",
+                "Referer": "http://www.vbiquge.co/5_5283/",
+                "Upgrade-Insecure-Requests": "1",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.50"
+            }
+            h['User-Agent'] = str(UserAgent().random)
+            try:
+                response1 = requests.get(url=url, headers=h).text
+                x = url.split('.')
+                url = x[0] + "." + x[1] + "." + x[2] + "_2." + x[3]
+                response2 = requests.get(url=url, headers=h).text
+            except:
+                h['User-Agent'] = str(UserAgent().random)
+                time.sleep(math.floor(random() * 2))
+                response1 = requests.get(url=url, headers=h).text
+                x = url.split('.')
+                url = x[0] + "." + x[1] + "." + x[2] + "_2." + x[3]
+                response2 = requests.get(url=url, headers=h).text
+            # print(response)
+            etree_html1 = etree.HTML(response1)
+            title1 = etree_html1.xpath('//*[@ class="pt10"]/text()')[0]
+            content1 = etree_html1.xpath('string(//*[@ id="rtext"])')
+            etree_html2 = etree.HTML(response2)
+            title2 = etree_html2.xpath('//*[@ class="pt10"]/text()')[0]
+            content2 = etree_html2.xpath('string(//*[@ id="rtext"])')
+            print(num, title1)
+            print(num, title2)
+            with open(textpath, 'w') as file:  # 创建并打开一个文件
+                file.write(title1 + "\n" + content1 + "\n" +title2 + "\n"+content2 )  # 放进去内容，写入
+                file.close()  # 关闭
+            dirpath = str(self.novel_name) + "/"
+            # file_nums = sum([len(files) for root, dirs, files in os.walk(dirpath)])
+            # self.ui.progressBar.setValue(round(float(file_nums/len(Chapter_url_list))*100))
+    except:
+            # print(url, num, head)
 
-        # 进度条设置
-        self.pbar = QtWidgets.QProgressBar(self)
-        self.pbar.setGeometry(50, 50, 210, 25)
-        self.pbar.setValue(0)
+            QMessageBox.about(self.ui, "提示", "下载错误，请稍后重试")
+#合并章节
+def combine(self,Chapter_head_list):
+    dirpath = str(self.novel_name) + "/"
+    for Chapter_head in Chapter_head_list:
+        textpath = dirpath + str(Chapter_head) + ".txt"
+        f=open(str(self.novel_name)+".txt", 'a+',encoding='utf-8')
+        istxtExists = os.path.exists(textpath)
+        if not istxtExists:
+            print(str(Chapter_head) + ".txt" + "文件不存在")
+            continue
+        else:
+            file=open(textpath)  # 创建并打开一个文件
+            print(Chapter_head)
+            f.write(file.read()+'\n')
+            file.close()  # 关闭
+            f.close()
+#获取章节
+def  getchapter(self,url):
+    try:
+        h = {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+            "Cache-Control": "max-age=0",
+            "Connection": "keep-alive",
+            # "Cookie": "articlevisited=1",
+            "DNT": "1",
+            "Host": "www.vbiquge.co",
+            # "If-Modified-Since": "Wed, 21 Apr 2021 00:28:38 GMT",
+            "Referer": "http://www.vbiquge.co/search/",
+            "Upgrade-Insecure-Requests": "1",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.50"
+        }
+        h['User-Agent'] = str(UserAgent().random)
+        response = requests.get(url=url, headers=h)
+        print(response)
+        etree_html = etree.HTML(response.text)
+        Chapter_url_list = etree_html.xpath('//*[@id="list-chapterAll"]/dd/a/@href')
+        Chapter_url_list = ['http://www.vbiquge.co' + str(i) for i in Chapter_url_list]
+        Chapter_head_list = etree_html.xpath('//*[@id="list-chapterAll"]/dd/a/text()')
+        # print(len(Chapter_url_list), Chapter_url_list)
+        # print(len(Chapter_head_list), Chapter_head_list)
+        Chapter_num_list = []
+        for num in range(0, len(Chapter_url_list)):
+            Chapter_num_list.append(num)
+        for i in range(0, len(Chapter_url_list)):
+            try:
+                thread = MyThread(func=getcontent,
+                                  kwargs={"self": self, "url": Chapter_url_list[i], "num": Chapter_num_list[i],
+                                          "head": Chapter_head_list[i]})
+                thread.start()
+            except:
+                print(f'第{i}章 线程启动失败')
+            finally:
+                time.sleep(random())
+        dirpath = str(self.novel_name) + "/"
+        file_nums = sum([len(files) for root, dirs, files in os.walk(dirpath)])
+        if (file_nums > 0):
+            print("读取到" + dirpath + "目录下有" + str(file_nums) + "个文件")
+        print("___________", file_nums, len(Chapter_head_list), "______________")
+        # 没下好的话重新下载三次
+        for i in range(0, 3):
+            if (file_nums != len(Chapter_head_list)):
+                for i in range(0, len(Chapter_url_list)):
+                    try:
+                        thread = MyThread(func=getcontent,
+                                          kwargs={"self": self, "url": Chapter_url_list[i], "num": Chapter_num_list[i],
+                                                  "head": Chapter_head_list[i]})
+                        thread.start()
+                    except:
+                        print(f'第{i}章 线程启动失败')
+            else:
+                break
+        print("开始合并")
+        combine(self,Chapter_head_list)
+        QMessageBox.about(self.ui, "提示", "下载完成")
+    except:
+        QMessageBox.about(self.ui, "提示", "下载错误，请稍后重试")
 
-        # 窗口初始化
-        self.setGeometry(300, 300, 300, 200)
-        self.setWindowTitle('OmegaXYZ.com')
-        self.show()
 
-        self.thread = None  # 初始化线程
-
-    def start_login(self):
-        # 创建线程
-        self.thread = Runthread()
-        # 连接信号
-        self.thread._signal.connect(self.call_backlog)  # 进程连接回传到GUI的事件
-        # 开始线程
-        self.thread.start()
-
-    def call_backlog(self, msg):
-        self.pbar.setValue(int(msg))  # 将线程的参数传入进度条
 class book:
     page = 1
+    novel_name=''
     total = 0
     flag = 0
-    Queue = PriorityQueue()
+    # Queue = PriorityQueue()
+    # 搜索出的链接
     url_list = []
+    # 搜索出的书名
     head_list = []
+    # 搜索出的作者
     author_list = []
+
     def __init__(self):
         # 从文件中加载UI定义
         self.ui = uic.loadUi("novel.ui")
@@ -159,108 +288,26 @@ class book:
         print("search")
 
     def download(self):
-        def getcontent(url, num):
-            QApplication.processEvents()
-            h = {
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-                "Accept-Encoding": "gzip, deflate",
-                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
-                "Cache-Control": "max-age=0",
-                "Connection": "keep-alive",
-                # "Cookie": "articlevisited=1",
-                "DNT": "1",
-                "Host": "www.vbiquge.co",
-                # "If-Modified-Since": "Thu, 07 Mar 2019 20:54:17 GMT",
-                "Referer": "http://www.vbiquge.co/5_5283/",
-                "Upgrade-Insecure-Requests": "1",
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.50"
-            }
-            h['User-Agent'] = str(UserAgent().random)
-            try:
-                response1 = requests.get(url=url, headers=h).text
-                x = url.split('.')
-                url = x[0] + "." + x[1] + "." + x[2] + "_2." + x[3]
-                response2 = requests.get(url=url, headers=h).text
-            except:
-                h['User-Agent'] = str(UserAgent().random)
-                time.sleep(math.floor(random() * 2))
-                response1 = requests.get(url=url, headers=h).text
-                x = url.split('.')
-                url = x[0] + "." + x[1] + "." + x[2] + "_2." + x[3]
-                response2 = requests.get(url=url, headers=h).text
-            # print(response)
-            etree_html1 = etree.HTML(response1)
-            title1 = etree_html1.xpath('//*[@ class="pt10"]/text()')[0]
-            content1 = etree_html1.xpath('string(//*[@ id="rtext"])')
-            etree_html2 = etree.HTML(response2)
-            title2 = etree_html2.xpath('//*[@ class="pt10"]/text()')[0]
-            content2 = etree_html2.xpath('string(//*[@ id="rtext"])')
-            print(num, title1)
-            print(num, title2)
-            self.Queue.put([num, title1 + "\n" + content1 + "\n" + title2 + "\n" + content2])
-            print(self.Queue.qsize())
         try:
             currentrow = self.ui.content.currentRow()
             head = self.ui.content.item(currentrow, 0).text()
             author = self.ui.content.item(currentrow, 1).text()
             url = self.ui.content.item(currentrow, 2).text()
             print("download", currentrow, head, author, url)
-            h = {
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-                "Accept-Encoding": "gzip, deflate",
-                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
-                "Cache-Control": "max-age=0",
-                "Connection": "keep-alive",
-                # "Cookie": "articlevisited=1",
-                "DNT": "1",
-                "Host": "www.vbiquge.co",
-                # "If-Modified-Since": "Wed, 21 Apr 2021 00:28:38 GMT",
-                "Referer": "http://www.vbiquge.co/search/",
-                "Upgrade-Insecure-Requests": "1",
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.50"
-            }
-            h['User-Agent'] = str(UserAgent().random)
-            response = requests.get(url=url, headers=h)
-            print(response)
-            etree_html = etree.HTML(response.text)
-            url_list = etree_html.xpath('//*[@id="list-chapterAll"]/dd/a/@href')
-            url_list = ['http://www.vbiquge.co' + str(i) for i in url_list]
-            head_list = etree_html.xpath('//*[@id="list-chapterAll"]/dd/a/text()')
-            print(len(url_list), url_list)
-            print(len(head_list), head_list)
-            num_list = []
-            for num in range(0, len(url_list)):
-                num_list.append(num)
-            # random.shuffle(list_of_idx)
-            # with ThreadPoolExecutor(8) as Pool:  # 使用线程池
-            for i in range(0, len(url_list)):
-                try:
-                    thread = threading.Thread(target=getcontent, kwargs={"url": url_list[i],"num":num_list[i]})
-                    thread.start()
-                except:
-                    print(f'第{i}章 线程启动失败')
-                finally:
-                    time.sleep(math.floor(random()*5))
-                # Pool.map(getcontent, url_list,num_list)
-            print("_____________",self.Queue.qsize(),len(url_list),"_____________")
-            if(self.Queue.qsize()>=len(url_list)):
-                with open(f'{head}.txt', 'a+', encoding='utf-8') as f:
-                    while not self.Queue.empty():
-                        f.write(self.Queue.get()[1])
-                    f.close()
-            else:
-                time.sleep(math.floor(random() * 5))
-            if(self.Queue.empty()):
-                QMessageBox.about(self.ui, "提示", "下载完成")
-        except:
-            QMessageBox.about(self.ui, "提示", "下载错误，请稍后重试")
+            self.novel_name = head
+            thread = MyThread(func=getchapter,kwargs={"self": self, "url": url})
+            thread.start()
+        except Exception as e:
+            print(e)
+            # QMessageBox.about(self.ui, "提示", "下载错误，请稍后重试")
 
     def changedir(self):
         info = self.ui.comboBox.currentText()
+        # widget = QPushButton(str(5-1), self)
+        # self.ui.addWidget(widget,1,0)
         print("changedir", info)
-        if (info == "69书屋"):
-            QMessageBox.about(self.ui, "提示", "请自备梯子")
-        pass
+        # if (info == "69书屋"):
+        #     QMessageBox.about(self.ui, "提示", "请自备梯子")
 
     def changetext(self):
         self.flag=0
