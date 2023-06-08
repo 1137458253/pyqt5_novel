@@ -1,23 +1,15 @@
 import math
 import os
 import re
-import threading
 import time
-from concurrent.futures.thread import ThreadPoolExecutor
-from queue import PriorityQueue
 from random import random
+
 import requests
 from PyQt5 import uic
-from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QApplication, QMessageBox, QTableWidgetItem, QPlainTextEdit, QMainWindow, QPushButton, \
-    QWidget
-from PyQt5 import QtWidgets, QtCore
-import sys
 from PyQt5.QtCore import *
-import time
+from PyQt5.QtWidgets import QApplication, QMessageBox, QTableWidgetItem, QWidget
 from fake_useragent import UserAgent
 from lxml import etree
-
 
 h = {        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
             "Accept-Encoding": "gzip, deflate",
@@ -281,18 +273,22 @@ class SearchThread(QThread):
                         self.communication.ui.content.setItem(i, 0, QTableWidgetItem(f"{head_list1[i]}"))
                         self.communication.ui.content.setItem(i, 1, QTableWidgetItem(f"{author_list1[i]}"))
                         self.communication.ui.content.setItem(i, 2, QTableWidgetItem(f"{url_list1[i]}"))
+                    self.communication.ui.page.setText(f"{self.communication.page}/{self.communication.total}")
                 elif self.communication.flag == 1:
-                    url_list1 = self.communication.url_list[30 * (self.communication.page - 1):30 * self.communication.page]
-                    head_list1 = self.communication.head_list[30 * (self.communication.page - 1):30 * self.communication.page]
-                    author_list1 = self.communication.author_list[30 * (self.communication.page - 1):30 * self.communication.page]
+                    print("本地取出")
+                    url_list1 = self.communication.url_list[
+                                30 * (self.communication.page - 1):30 * self.communication.page]
+                    head_list1 = self.communication.head_list[
+                                 30 * (self.communication.page - 1):30 * self.communication.page]
+                    author_list1 = self.communication.author_list[
+                                   30 * (self.communication.page - 1):30 * self.communication.page]
                     for i in range(0, len(url_list1)):
                         self.communication.ui.content.setItem(i, 0, QTableWidgetItem(f"{head_list1[i]}"))
                         self.communication.ui.content.setItem(i, 1, QTableWidgetItem(f"{author_list1[i]}"))
                         self.communication.ui.content.setItem(i, 2, QTableWidgetItem(f"{url_list1[i]}"))
                 self.communication.ui.page.setText(f"{self.communication.page}/{self.communication.total}")
-                self.communication.ui.progressBar.setValue(100)
-
-                self.sinout.emit("搜索完成！")
+                # self.communication.ui.progressBar.setValue(100)
+                #     self.sinout.emit("搜索完成！")
 
         except Exception as e:
             print("搜索线程出错",e)
@@ -611,7 +607,7 @@ class Book(QWidget):
             self.urls=[url]
 
             #开启下载线程 传入该类和最大线程数
-            self.downloadThread=DownloadThread(self,20)
+            self.downloadThread = DownloadThread(self, 100)
             self.downloadThread.start()
 
         except Exception as e:
@@ -643,28 +639,35 @@ class Book(QWidget):
         #     QMessageBox.about(self.ui, "提示", "请自备梯子")
 
     def changetext(self):
-        self.flag=0
-        self.page=1
+        self.flag = 0
+        self.page = 1
+        print("内容改变")
 
     def nextpage(self):
-        if (self.page < self.total):
-            self.page += 1
-            self.ui.content.clearContents()
-            self.flag=1
-            self.search()
-        else:
-            QMessageBox.about(self.ui, "提示", "已经到底了")
-        print(self.page)
+        try:
+            if (self.page < self.total):
+                self.page += 1
+                self.ui.content.clearContents()
+                self.flag = 1
+                self.search()
+            else:
+                QMessageBox.about(self.ui, "提示", "已经到底了")
+            print(self.page)
+        except Exception as e:
+            print(e)
 
     def prepage(self):
-        if (self.page > 1):
-            self.page -= 1
-            self.ui.content.clearContents()
-            self.flag = 1
-            self.search()
-        else:
-            QMessageBox.about(self.ui, "提示", "不能再往前了")
-        print(self.page)
+        try:
+            if (self.page > 1):
+                self.page -= 1
+                self.ui.content.clearContents()
+                self.flag = 1
+                self.search()
+            else:
+                QMessageBox.about(self.ui, "提示", "不能再往前了")
+            print(self.page)
+        except Exception as e:
+            print(e)
 
 
 

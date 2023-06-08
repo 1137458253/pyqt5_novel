@@ -1,18 +1,12 @@
 import math
 import os
-import threading
 import time
-from concurrent.futures.thread import ThreadPoolExecutor
-from queue import PriorityQueue
 from random import random
+
 import requests
 from PyQt5 import uic
-from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QApplication, QMessageBox, QTableWidgetItem, QPlainTextEdit, QMainWindow, QPushButton
-from PyQt5 import QtWidgets, QtCore
-import sys
 from PyQt5.QtCore import *
-import time
+from PyQt5.QtWidgets import QApplication, QMessageBox, QTableWidgetItem
 from fake_useragent import UserAgent
 from lxml import etree
 
@@ -328,9 +322,9 @@ class book:
             self.ui.content.clearContents()
             self.flag=1
             self.search()
+            print(self.page)
         else:
             QMessageBox.about(self.ui, "提示", "已经到底了")
-        print(self.page)
 
     def prepage(self):
         if (self.page > 1):
@@ -338,9 +332,9 @@ class book:
             self.ui.content.clearContents()
             self.flag = 1
             self.search()
+            print(self.page)
         else:
             QMessageBox.about(self.ui, "提示", "不能再往前了")
-        print(self.page)
 
 
 
