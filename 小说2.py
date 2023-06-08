@@ -53,11 +53,9 @@ class DownloadThreadCore(QRunnable):
             url, num, head=self.kwargs["url"],self.kwargs["num"],self.kwargs["head"]
             dirpath = str(self.communication.novel_name) + "/"
             textpath = dirpath + str(head) + ".txt"
-            isdirExists = os.path.exists(dirpath)
+
             istxtExists = os.path.exists(textpath)
-            if not isdirExists:
-                os.makedirs(dirpath)
-                print(str(self.communication.novel_name) + "文件夹创建成功")
+
             if istxtExists:
                 print(str(head) + ".txt" + "文件已存在")
                 return
@@ -141,6 +139,12 @@ class Tasks(QObject):
         print(len(Chapter_head_list), Chapter_head_list)
         Chapter_num_list = list(range(0, len(Chapter_url_list)))
         Chapter_head_list=list(map(validateTitle,Chapter_head_list))
+
+        dirpath = str(self.communication.novel_name) + "/"
+        isdirExists = os.path.exists(dirpath)
+        if not isdirExists:
+            os.makedirs(dirpath)
+            print(str(self.communication.novel_name) + "文件夹创建成功")
         for i in range(len(Chapter_url_list)):
             kwargs = {"length":len(Chapter_url_list),"url": Chapter_url_list[i], "num": Chapter_num_list[i],
                       "head": Chapter_head_list[i]}
@@ -148,24 +152,34 @@ class Tasks(QObject):
             task_thread = DownloadThreadCore()
             task_thread.transfer(kwargs=kwargs, communication=self.communication)
             task_thread.setAutoDelete(True)  # 是否自动删除
+
             self.pool.start(task_thread)
+
         print("sssss1111")
         self.pool.waitForDone()  # 等待任务执行完毕
         print("sssss2222")
         dirpath = str(self.communication.novel_name) + "/"
-        with open(str(self.communication.novel_name) + ".txt", 'a+', encoding='utf-8') as f:
-            for Chapter_head in Chapter_head_list:
-                textpath = dirpath + str(Chapter_head) + ".txt"
+        isdirExists = os.path.exists(dirpath)
+        if not isdirExists:
+            os.makedirs(dirpath)
+            print(str(self.communication.novel_name) + "文件夹创建成功")
+        try:
+            with open(str(self.communication.novel_name) + ".txt", 'a+', encoding='utf-8') as f:
+                for Chapter_head in Chapter_head_list:
+                    textpath = dirpath + str(Chapter_head) + ".txt"
 
-                istxtExists = os.path.exists(textpath)
-                if not istxtExists:
-                    print(str(Chapter_head) + ".txt" + "文件不存在")
-                    continue
-                else:
-                    file = open(textpath)
-                    print(Chapter_head)
-                    f.write(file.read() + '\n')
-                    file.close()  # 关闭
+                    istxtExists = os.path.exists(textpath)
+                    if not istxtExists:
+                        print(str(Chapter_head) + ".txt" + "文件不存在")
+                        continue
+                    else:
+                        print(textpath)
+                        file = open(textpath,"r",encoding="utf-8")
+                        print(Chapter_head)
+                        f.write(file.read() + '\n')
+                        file.close()  # 关闭
+        except Exception as e:
+            print(e)
 
         self.communication.download_sin.emit(3,'下载完毕',0)
 
@@ -553,6 +567,7 @@ class Book(QWidget):
 
         #绑定下载召回信号
         self.download_sin.connect(self.download_callback)
+        self.downloadThread=None
 
     def search(self):
         try:
@@ -564,6 +579,16 @@ class Book(QWidget):
 
         except Exception as e:
             print("search error",e)
+
+    # 重构关闭
+    def closeEvent(self, event):
+        if self.downloadThread is not None:
+
+            self.downloadThread.task.pool.globalInstance().cancelAll()
+
+        event.accept()
+        # 退出所有线程
+        os._exit(0)
 
     def search_callback(self,info):
         self.mes("搜索停止",info)
