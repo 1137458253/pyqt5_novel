@@ -17,9 +17,6 @@ from fake_useragent import UserAgent
 from lxml import etree
 
 
-
-
-
 class MyThread(QThread):
     def __init__(self, func, kwargs):
         try:
@@ -44,6 +41,16 @@ class MyThread(QThread):
 #         self.data=data
 #     def run(self):
 #         self.sinout.emit(1,2)
+
+#下载线程
+class DownloadThread(QThread):
+    sinout=pyqtSignal(int,int)
+    def __init__(self,data):
+        super(DownloadThread, self).__init__()
+        self.data=data
+    def run(self):
+        self.sinout.emit(1,2)
+
 #下载所有章节
 def getcontent(self,url, num, head):
     try:
@@ -103,8 +110,8 @@ def getcontent(self,url, num, head):
             # self.ui.progressBar.setValue(round(float(file_nums/len(Chapter_url_list))*100))
     except:
             # print(url, num, head)
-
             QMessageBox.about(self.ui, "提示", "下载错误，请稍后重试")
+
 #合并章节
 def combine(self,Chapter_head_list):
     dirpath = str(self.novel_name) + "/"
@@ -122,7 +129,7 @@ def combine(self,Chapter_head_list):
             file.close()  # 关闭
             f.close()
 #获取章节
-def  getchapter(self,url):
+def getchapter(self,url):
     try:
         h = {
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
@@ -150,6 +157,8 @@ def  getchapter(self,url):
         Chapter_num_list = []
         for num in range(0, len(Chapter_url_list)):
             Chapter_num_list.append(num)
+
+        print(Chapter_url_list)
         for i in range(0, len(Chapter_url_list)):
             try:
                 thread = MyThread(func=getcontent,
