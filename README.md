@@ -3,6 +3,5 @@
 This project is a simple pc reading tools.In the near future, we will complete the functions of this application.
 ## 文件介绍
 novel.ui文件为软件ui架构，整个软件架构由pyqt5完成，界面简洁易用。<br>
-novel2需配合ui文件使用，生成的novel2.exe需和ui在同一个文件夹中<br>
-novel3可以单独使用<br>
-![image](src/ui.png)
+download_novel.py文件更为简洁，易读，并在之前的基础上新增了存储地址选择功能。
+<div align=center><img src="src/ui.png"></div>
